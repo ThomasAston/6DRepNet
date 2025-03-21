@@ -61,8 +61,6 @@ class SixDRepNet2(nn.Module):
         self.avgpool = nn.AvgPool2d(7)
 
         self.linear_reg = nn.Linear(512*block.expansion,6)
-      
-
 
         # Vestigial layer from previous experiments
         self.fc_finetune = nn.Linear(512 * block.expansion + 3, 3)

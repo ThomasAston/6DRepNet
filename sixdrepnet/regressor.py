@@ -85,9 +85,13 @@ class SixDRepNet_Detector():
             img = img.cuda(self.gpu)
      
         pred = self.model(img)
-        pred = pred.detach().cpu().numpy()[0]
         
-        return pred
+        euler = utils.compute_euler_angles_from_rotation_matrices(pred)*180/np.pi
+        p = euler[:, 0].cpu().detach().numpy()
+        y = euler[:, 1].cpu().detach().numpy()
+        r = euler[:, 2].cpu().detach().numpy()
+
+        return p,y,r
 
 
     def draw_axis(self, img, yaw, pitch, roll, tdx=None, tdy=None, size = 100):
