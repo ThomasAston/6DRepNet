@@ -85,7 +85,7 @@ class SixDRepNet_Detector():
             img = img.cuda(self.gpu)
      
         pred = self.model(img)
-        pred = pred.detach().cpu().numpy()
+        pred = pred.detach().cpu().numpy()[0]
         
         return pred
 
