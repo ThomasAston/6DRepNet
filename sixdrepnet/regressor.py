@@ -2,50 +2,64 @@ from math import cos, sin
 
 import torch
 from torch.hub import load_state_dict_from_url
-from torchvision import transforms
+from torchvision import transforms, models
 import cv2
 from PIL import Image
 import numpy as np
 
-from model import SixDRepNet
+from model import SixDRepNet, SixDRepNet360
 import utils
 
 
 class SixDRepNet_Detector():
 
-    def __init__(self, gpu_id : int=0, dict_path: str=''):
+    def __init__(self, gpu_id: int = 0, dict_path: str = '', model_type: str = 'SixDRepNet'):
         """
-        Constructs the SixDRepNet instance with all necessary attributes.
+        Constructs the SixDRepNet or SixDRepNet360 instance with all necessary attributes.
 
         Parameters
         ----------
-            gpu:id : int
-                gpu identifier, for selecting cpu set -1
-            dict_path : str
-                Path for local weight file. Leaving it empty will automatically download a finetuned weight file.
+        gpu_id : int
+            GPU identifier; set -1 for CPU.
+        dict_path : str
+            Path for local weight file. Leaving it empty will download pretrained weights.
+        model_type : str
+            Either 'SixDRepNet' or 'SixDRepNet360'.
         """
-
         self.gpu = gpu_id
-        self.model = SixDRepNet(backbone_name='RepVGG-B1g2',
-                                backbone_file='',
-                                deploy=True,
-                                pretrained=False)
-        # Load snapshot
-        if dict_path=='':
-            saved_state_dict = load_state_dict_from_url("https://cloud.ovgu.de/s/Q67RnLDy6JKLRWm/download/6DRepNet_300W_LP_AFLW2000.pth")    
+        self.model_type = model_type
+
+        if model_type == 'SixDRepNet360':
+            self.model = SixDRepNet360(models.resnet.Bottleneck, [3, 4, 6, 3], 6)
+            default_url = "https://cloud.ovgu.de/s/TewGC9TDLGgKkmS/download/6DRepNet360_Full-Rotation_300W_LP+Panoptic.pth"
+        elif model_type == 'SixDRepNet':
+            self.model = SixDRepNet(backbone_name='RepVGG-B1g2',
+                                    backbone_file='',
+                                    deploy=True,
+                                    pretrained=False)
+            default_url = "https://cloud.ovgu.de/s/Q67RnLDy6JKLRWm/download/6DRepNet_300W_LP_AFLW2000.pth"
+        else:
+            raise ValueError("model_type must be either 'SixDRepNet' or 'SixDRepNet360'.")
+
+        # Load weights
+        if dict_path == '':
+            saved_state_dict = load_state_dict_from_url(default_url)
         else:
             saved_state_dict = torch.load(dict_path)
 
+        self.model.load_state_dict(saved_state_dict, strict=False)
         self.model.eval()
-        self.model.load_state_dict(saved_state_dict)
-        
+
         if self.gpu != -1:
             self.model.cuda(self.gpu)
 
-        self.transformations = transforms.Compose([transforms.Resize(224),
-                                transforms.CenterCrop(224),
-                                transforms.ToTensor(),
-                                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+        self.transformations = transforms.Compose([
+            transforms.Resize(224),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                std=[0.229, 0.224, 0.225])
+        ])
 
 
     def predict(self, img):
