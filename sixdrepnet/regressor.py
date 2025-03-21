@@ -85,7 +85,8 @@ class SixDRepNet_Detector():
             img = img.cuda(self.gpu)
      
         pred = self.model(img)
-        pred.detach().cpu().numpy()
+        print(pred)
+        pred = pred.detach().cpu().numpy()
         print(pred)
         # euler = utils.compute_euler_angles_from_rotation_matrices(pred)*180/np.pi
         # p = euler[:, 0].cpu().detach().numpy()
